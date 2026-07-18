@@ -196,7 +196,54 @@ code lands — never prose only. `total` = no failure on a well-formed input of 
   `i64`-bounded surface or anticipates arbitrary-width trits is open. *Disposition:* mirror the M-111
   ceiling for v0 (with the boundary an explicit `None`, per C1); FLAGGED for a later bignum pass.
 
+## Amendment — 2026-07-18: E-W1/M-1119 conversion-utility ceiling widening (append-only)
+
+**Status of this amendment.** Captured 2026-07-18 as part of the W-1 corrective's E-W1 enablement
+item (`docs/spec/swaps/binary-ternary.md` §A.5; `docs/planning/design-steer-2026-07-17/
+PROGRAM-HANDOFF-DESIGN-STEER-2026-07-17.md` §2.2 item 4, tracked as **M-1119**). This is a
+**breaking Rust-signature change** to the DN-66-frozen (ADR-045-unfrozen-for-gap-closure) surface,
+so per this spec's own §5.5-analogue obligation and ADR-045 §2's "still needs a spec amendment +
+changelog entry (G2), not a silent edit," it is recorded here rather than silently landed in code
+alone. Status field unchanged (**Accepted**, 2026-06-20, DN-07) — additive amendment, not a
+re-ratification.
+
+**What changes.** §7-Q4's flagged width/bignum ceiling is **narrowed, not closed**: `trits_to_int`/
+`int_to_trits`/`max_magnitude`'s concrete Rust types move from `i64` to `i128` in both
+`mycelium-std-ternary::arithmetic` and `mycelium_core::ternary` (the two crates' call sites agree,
+per the M-1119 issue's DoD). §3's design sketch already used the abstract `Int`/`Width` names, so
+the *exported-op surface* text is unaffected; only the concrete Rust type behind `Int` in this
+crate's actual signatures widens. Consequently:
+
+- `max_magnitude`'s ceiling moves from `m ≥ 41` (in practice `m ≥ 40`, per the corrected finding
+  below) to `m ≥ 81` — an explicit `None`, never a silent truncation (C1 unchanged).
+- The **W-1 canonical pair** `Binary{64} ↔ Ternary{41}` (`docs/spec/swaps/binary-ternary.md` §A.3)
+  is now constructible through this crate's conversion-utility fast path (previously blocked).
+- **Corrected finding (VR-5 — grounded by direct computation, not asserted):** the pre-widening
+  `i64` ceiling was documented here and in the kernel as `m ≤ 40`, but the actual ceiling — because
+  `max_magnitude`'s `3^m` computation itself overflows `i64` one trit before the final quotient
+  would have — was `m ≤ 39`. This matches `mycelium-mlir::swap_codegen::MAX_TERNARY_WIDTH_I64 = 39`'s
+  independently-documented figure. The `i64 → i128` widening in this amendment supersedes both the
+  `m ≤ 40` figure in §7-Q4 above and the narrower actual `m ≤ 39` it should have read.
+- **Q4 remains open** (full arbitrary-width `std.ternary` support is still undecided) — only the
+  concrete ceiling number moves; the disposition ("mirror the kernel ceiling for v0, explicit `None`
+  at the boundary") is unchanged in shape, just at a wider bound. Full arbitrary-width arithmetic
+  remains `mycelium_core::ternary::BigTernary` (M-756), not this Ring-1 wrapper's concern; `M-758`
+  (`PackedTernary`) stays YAGNI/benchmark-gated, unaffected by this amendment.
+
+**Changelog entry:** FLAGGED for the integrating parent to append to `CHANGELOG.md` (shared file,
+not edited directly by this change) — a breaking-signature note for `mycelium-std-ternary`'s
+`trits_to_int`/`int_to_trits`/`max_magnitude` (`i64` → `i128`), landed together with the matching
+`mycelium-core::ternary` widening and the `mycelium-cert` call-site fixes it required.
+
 ## Meta — changelog
+
+- **2026-07-18 — Amendment (append-only; see the Amendment section above).** Records the E-W1/
+  M-1119 `i64 → i128` conversion-utility widening as a breaking-but-documented change to this
+  DN-66-frozen surface (ADR-045 §2 obligation): `trits_to_int`/`int_to_trits`/`max_magnitude` widen
+  from `i64` to `i128`, narrowing (not closing) §7-Q4's open ceiling question from `m ≥ 41`
+  (corrected finding: the real prior ceiling was `m ≥ 40`) to `m ≥ 81`, and unblocking the W-1
+  canonical `Binary{64} ↔ Ternary{41}` pair through this crate's fast path. `Status` field unchanged
+  (**Accepted**, 2026-06-20, DN-07). Append-only.
 
 - **2026-06-17 — Draft (needs-design).** Stands up the `std.ternary` module design spec (M-517, #159;
   Ring 1, Tier A) decomposing RFC-0016 §4.3's ternary differentiator. Fixes the scope/boundary
