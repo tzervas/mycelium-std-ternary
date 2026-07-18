@@ -30,8 +30,10 @@
 //!   and cannot be silently folded in (ternary.md §7-Q2).
 //! - **Q3:** The split between "caller names scheme" (v0) and "RFC-0005 selector chooses + emits
 //!   EXPLAIN" (M-519) needs a cross-module design pass (ternary.md §7-Q3).
-//! - **Q4:** Width ceiling mirrors the M-111 `i64` ceiling (`m ≤ 40`); bignum is out of scope
-//!   for v0 (ternary.md §7-Q4). Out-of-range is explicit `None` (C1).
+//! - **Q4:** Width ceiling mirrors the M-111 kernel's conversion-utility ceiling — widened from
+//!   `i64` (`m ≤ 39` in practice) to `i128` (`m ≤ 80`) by E-W1/M-1119, 2026-07-18; full bignum is
+//!   still out of scope for this Ring-1 wrapper (ternary.md §7-Q4 amendment). Out-of-range is
+//!   explicit `None` (C1).
 //!
 //! ## Ambient Representation (RFC-0012 §8-Q3)
 //!
@@ -69,6 +71,9 @@ pub mod arithmetic;
 pub mod guarantee_matrix;
 pub mod packing;
 pub mod primitives;
+
+#[cfg(test)]
+mod tests;
 
 // Re-export the primary surface so callers can use `mycelium_std_ternary::Trit` etc.
 pub use arithmetic::{add, int_to_trits, max_magnitude, mul, neg, sub, trits_to_int};
